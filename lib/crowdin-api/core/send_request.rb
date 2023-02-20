@@ -4,18 +4,50 @@ module Crowdin
   module Web
     class SendRequest
       attr_reader :request
+      attr_reader :retry_opts
 
       def initialize(request, file_destination = nil)
         @request          = request
+        @retry_opts = request.retry_opts
         @file_destination = file_destination
         @errors           = []
       end
 
       def perform
-        parse_response(process_request)
+        if retry_opts
+          retry_request
+        else
+          parse_response(process_request)
+        end
       end
 
       private
+
+        def retry_request
+          retry_request_delay = retry_opts[:request_delay]
+          retries_count = retry_opts[:retries_count]
+          retry_error_messages = retry_opts[:error_messages]
+
+          response = ''
+
+          loop do
+            response = parse_response(process_request)
+            if response.is_a?(String) && response.match('Something went wrong')
+              if retries_count.positive?
+                retry_error_messages.each do |message|
+                  break if response.match(message)
+                end
+    
+                retries_count -= 1
+                sleep retry_request_delay
+              else
+                return response
+              end
+            else
+              return response
+            end
+          end
+        end
 
         def process_request
           request.send(request.method)

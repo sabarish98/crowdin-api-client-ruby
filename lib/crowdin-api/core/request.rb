@@ -6,11 +6,13 @@ module Crowdin
       attr_reader :connection
       attr_reader :method
       attr_reader :payload
+      attr_reader :retry_opts
 
       def initialize(connection, method, url, payload = {})
         @connection = connection[url]
         @method     = method
         @payload    = build_payload(payload)
+        @retry_opts = connection.options[:retry_opts]
       end
 
       def get?

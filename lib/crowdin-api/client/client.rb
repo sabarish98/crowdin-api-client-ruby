@@ -161,11 +161,16 @@ module Crowdin
 
       def build_connection
         build_options
+        set_retry_config
         @connection ||= ::RestClient::Resource.new(config.base_url, options)
       end
 
       def build_options
         @options ||= config.options.merge(headers: config.headers)
+      end
+
+      def set_retry_config
+        options[:retry_opts] = config.retry_options || nil
       end
 
       def set_default_logger
